@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 
+# use with kalman03 and xy
+
 df = pd.read_csv('raw_data\HIMU_uturn.csv')
 # print(df.columns.values.tolist())
 # ROT_BIAS = [0,0,0]
