@@ -29,6 +29,6 @@ adjusted_df['GPSx'] = x
 adjusted_df['GPSy'] = y
 adjusted_df['a'] = a
 adjusted_df['omega'] = -1*df["icm4x6xx_gyroscope.x"]
-adjusted_df['yaw'] = np.radians(df["orientation.x"])
+adjusted_df['yaw'] = -1* np.radians(df["orientation.x"])
 adjusted_df = adjusted_df.iloc[1:]
 adjusted_df.to_csv('kalman00.csv')
