@@ -233,5 +233,6 @@ def main():
     histories = pd.DataFrame(history, columns= ['x','y','yaw' ,'vx','vy'])
     histories.to_csv('history00.csv')
  
-# Program starts running here with the main method  
-main()
+# Program starts running here with the main method
+if __name__ == '__main__':
+    main()
