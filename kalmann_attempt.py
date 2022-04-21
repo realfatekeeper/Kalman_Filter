@@ -189,7 +189,8 @@ def main():
     # the accuracy of the state estimate at time k made using the
     # state transition matrix. We start off with guessed values.
     P_k_minus_1 = np.identity(5)*0.1
-                             
+    track = []
+    history = []
     # Start from the first row and go through each of the sensor observations, 
     # one at a time. 
     for k , row in data.iterrows():
@@ -214,8 +215,23 @@ def main():
         state_estimate_k_minus_1 = optimal_state_estimate_k
         P_k_minus_1 = covariance_estimate_k
         
+        track.append([state_estimate_k_minus_1[0],state_estimate_k_minus_1[1],row["GPSx"],row["GPSy"]])
+        history.append([state_estimate_k_minus_1[i] for i in range(5)])
+
+
         # Print a blank line
         print()
+
+    track = np.array(track)
+    history = np.array(history)
+
+    print('Saving Track record and History') 
+
+    result = pd.DataFrame(track, columns= ['x','y','GPSx','GPSy'])
+    result.to_csv('result00.csv')
+
+    histories = pd.DataFrame(history, columns= ['x','y','yaw' ,'vx','vy'])
+    histories.to_csv('history00.csv')
  
 # Program starts running here with the main method  
 main()
