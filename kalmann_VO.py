@@ -36,12 +36,13 @@ Q_k = np.identity(5)
 # H has the same number of rows as sensor measurements
 # and same number of columns as states.
 H_k = np.array([[1, 0, 0, 0, 0],
+                [0, 1, 0, 0, 0],
                 [0, 1, 0, 0, 0]])
 
 # Sensor measurement noise covariance matrix R_k
 # Has the same number of rows and columns as sensor measurements.
 # If we are sure about the measurements, R will be near zero.
-R_k = np.identity(2) * 0.01
+R_k = np.identity(3) * 0.01
 
 # Sensor noise. This is a vector with the
 # number of elements equal to the number of sensor measurements.
@@ -86,6 +87,20 @@ def getB(yaw, deltak):
                   [np.cos(yaw)*deltak, 0],
                   [np.sin(yaw)*deltak, 0]])
     return B
+
+
+def getHx(yaw, lastyaw, vx, vy):
+    dist = np.sqrt((pow(vx, 2)+pow(vy, 2)))
+    Hx = np.array([yaw-lastyaw, vx/dist, vy/dist])
+    return Hx
+
+
+def get_H_k(vx, vy):
+    dist = pow(np.sqrt((pow(vx, 2)+pow(vy, 2))), 3)
+    H_k = np.array([[0, 0, 1, 0, 0],
+                    [0, 0, 0, vy**2/dist, -vx*vy/dist],
+                    [0, 0, 0,  -vx*vy/dist, vx**2/dist]])
+    return H_k
 
 
 def ekf_predict(state_estimate_k_minus_1,
@@ -133,7 +148,7 @@ def ekf_predict(state_estimate_k_minus_1,
     return state_estimate_k, P_k
 
 
-def ekf_update(z_k_observation_vector, state_estimate_k, P_k):
+def ekf_update(z_k_observation_vector, state_estimate_k, state_estimate_k_minus_1 , P_k):
     """
     Low DR process
     Update the EKF based on updated measurement
@@ -154,11 +169,12 @@ def ekf_update(z_k_observation_vector, state_estimate_k, P_k):
     # Calculate the difference between the actual sensor measurements
     # at time k minus what the measurement model predicted
     # the sensor measurements would be for the current timestep k.
-    measurement_residual_y_k = z_k_observation_vector - (
-        (H_k @ state_estimate_k) + (
-            sensor_noise_w_k))
+    measurement_residual_y_k = z_k_observation_vector - \
+        getHx(state_estimate_k[2],state_estimate_k_minus_1[2], state_estimate_k[3], state_estimate_k[4])
 
     print(f'Observation={z_k_observation_vector}')
+
+    H_k = get_H_k(state_estimate_k[3], state_estimate_k[4])
 
     # Calculate the measurement residual covariance
     S_k = H_k @ P_k @ H_k.T + R_k
@@ -210,14 +226,15 @@ def ekf(z_k_observation_vector, state_estimate_k_minus_1,
                                         control_vector_k_minus_1, P_k_minus_1, dk)
     if update:
         state_estimate_k, P_k = ekf_update(
-            z_k_observation_vector, state_estimate_k, P_k)
+            z_k_observation_vector*0.1, state_estimate_k,state_estimate_k_minus_1, P_k)
 
     return state_estimate_k, P_k
 
 
 def main():
     # Read preprocessed data from csv
-    data = pd.read_csv('kalman05.csv')
+    data = pd.read_csv('kalman00.csv')
+    VOdf = pd.read_csv('VO00.csv')
     # We start at time k=1
     k = 1
 
@@ -252,12 +269,17 @@ def main():
         if k == 0:
             # Assume theta = 0 at first timestep
             np.array([0.0, 0.0, row["omega"]*dk, 0.0, 0.0])
+
+            """
             track.append([state_estimate_k_minus_1[0],
-                          state_estimate_k_minus_1[1], row["GPSx"], row["GPSy"]])
+            state_estimate_k_minus_1[1], row["GPSx"], row["GPSy"]])
+            """
+
             history.append([state_estimate_k_minus_1[i] for i in range(5)])
             continue
         # obs_vector_z_k is the data observed from external sensors
-        obs_vector_z_k = np.array([row["GPSx"], row["GPSy"]])
+        Vrow = VOdf.iloc[k]
+        obs_vector_z_k = np.array([Vrow["yawVO"],Vrow["vxVO"], Vrow["vyVO"]])
 
         control_vector_k_minus_1 = np.array([row["a"], row["omega"]])
         # Print the current timestep
@@ -285,8 +307,10 @@ def main():
         state_estimate_k_minus_1 = optimal_state_estimate_k
         P_k_minus_1 = covariance_estimate_k
 
+        
         track.append([state_estimate_k_minus_1[0],
-                     state_estimate_k_minus_1[1], row["GPSx"], row["GPSy"]])
+        state_estimate_k_minus_1[1], row["GPSx"], row["GPSy"]])
+        
         history.append([state_estimate_k_minus_1[i] for i in range(5)])
 
         # Print a blank line
@@ -297,8 +321,10 @@ def main():
 
     print('Saving Track record and History')
 
+    
     result = pd.DataFrame(track, columns=['x', 'y', 'GPSx', 'GPSy'])
     result.to_csv('result00.csv')
+    
 
     histories = pd.DataFrame(history, columns=['x', 'y', 'yaw', 'vx', 'vy'])
     histories.to_csv('history00.csv')
