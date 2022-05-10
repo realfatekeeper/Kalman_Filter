@@ -241,6 +241,9 @@ def main():
     # Time interval in seconds
     dk = 0.1
 
+    ## Change step of VO to read
+    VOstep = 1
+
     # The estimated state vector at time k-1 in the global reference frame.
     # [x_k_minus_1, y_k_minus_1, yaw_k_minus_1, v_x_k_minus_1 , v_y_k_minus_1]
     # [meters, meters, radians]
@@ -278,7 +281,7 @@ def main():
             history.append([state_estimate_k_minus_1[i] for i in range(5)])
             continue
         # obs_vector_z_k is the data observed from external sensors
-        Vrow = VOdf.iloc[k]
+        Vrow = VOdf.iloc[k*VOstep]
         obs_vector_z_k = np.array([Vrow["yawVO"],Vrow["vxVO"], Vrow["vyVO"]])
 
         control_vector_k_minus_1 = np.array([row["a"], row["omega"]])
