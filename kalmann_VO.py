@@ -146,7 +146,7 @@ def ekf_predict(state_estimate_k_minus_1,
 
     # Return the updated state and covariance estimates
     return state_estimate_k, P_k
-
+ 
 
 def ekf_update(z_k_observation_vector, state_estimate_k, state_estimate_k_minus_1 , P_k):
     """
@@ -296,6 +296,7 @@ def main():
             update = False
         
         """
+
         # Run the Extended Kalman Filter and store the
         # near-optimal state and covariance estimates
 
